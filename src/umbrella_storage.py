@@ -2,7 +2,6 @@
 
 class UmbrellaStorage:
     
-    
     #User A는 Spot 1, User B는 Spot 2를 사용
     def __init__(self):
         self.user_spot_map = {
@@ -85,3 +84,4 @@ class UmbrellaStorage:
 
     def get_all_spot_statuses(self):
         return {spot_id: {"status": data["status"], "user": data["user"]} for spot_id, data in self.spots.items()}
+

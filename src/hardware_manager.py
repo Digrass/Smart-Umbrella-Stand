@@ -5,37 +5,36 @@ import time
 import adafruit_dht
 import board
 
-# --- GPIO Pin Definitions (BCM mode) ---
+# GPIO Pin 설정
 FAN_PIN = 17
 
-# --- 날씨 상태 표시 RGB LED 핀 (기존 유지) ---
+# 날씨 상태 표시 RGB LED 핀
 WEATHER_RGB_RED_PIN = 26
 WEATHER_RGB_GREEN_PIN = 19
 WEATHER_RGB_BLUE_PIN = 13
 
-# --- 사용자 우산 위치 표시 단색 LED (기존 RED 핀만 사용) ---
+# 사용자 우산 위치 표시 LED
 USER_UMBRELLA_SPOT1_PIN = 11
 USER_UMBRELLA_SPOT2_PIN = 14
 
-# --- DHT22 습도 센서 핀 ---
+# DHT22 습도 센서 핀
 DHT_PIN = board.D4
 
-# --- 초음파 센서 핀 (총 3개) ---
+# 초음파 센서 핀
 ULTRASONIC_TRIG_PINS = [5, 20, 21]
 ULTRASONIC_ECHO_PINS = [6, 23, 24] 
 
-# --- 센서 객체 및 상수 ---
+# 센서 객체
 dht_sensor = None
 
-# Weather RGB 전용 PWM 딕셔너리
+# Weather RGB PWM 설정과 상수
 weather_rgb_pwm = {}
 PWM_FREQUENCY = 100 
 
 ULTRASONIC_SOUND_SPEED = 34300
 ULTRASONIC_TIMEOUT = 0.04      
 
-# --- 하드웨어 초기화 및 정리 함수 ---
-
+# 하드웨어 초기화 및 정리
 def _setup_rgb_led_pins(red_pin, green_pin, blue_pin, pwm_dict):
     """날씨용 RGB LED 설정 (공통 애노드 기준)"""
     GPIO.setup(red_pin, GPIO.OUT)
@@ -65,10 +64,10 @@ def initialize_hardware():
     GPIO.setup(FAN_PIN, GPIO.OUT)
     GPIO.output(FAN_PIN, GPIO.LOW)
 
-    # --- 날씨 상태 표시 RGB LED 설정 ---
+    # 날씨 상태 표시 RGB LED 설정
     _setup_rgb_led_pins(WEATHER_RGB_RED_PIN, WEATHER_RGB_GREEN_PIN, WEATHER_RGB_BLUE_PIN, weather_rgb_pwm)
    
-    # --- 사용자 우산 위치 표시 단색 LED 설정 (Digital Out) ---
+    # 사용자 우산 위치 표시 LED 설정
     GPIO.setup(USER_UMBRELLA_SPOT1_PIN, GPIO.OUT)
     GPIO.setup(USER_UMBRELLA_SPOT2_PIN, GPIO.OUT)
     GPIO.output(USER_UMBRELLA_SPOT1_PIN, GPIO.LOW)
@@ -103,8 +102,7 @@ def cleanup_hardware():
     GPIO.cleanup()
     print("Hardware cleanup complete.")
 
-# --- 초음파 센서 제어 ---
-
+#초음파 센서 제어
 def _measure_distance(trig_pin, echo_pin):
     GPIO.output(trig_pin, GPIO.HIGH)
     time.sleep(0.00001)
@@ -135,8 +133,7 @@ def detect_person_ultrasonic(threshold_cm=10):
     #print(distance)
     return 0 < distance <= threshold_cm
 
-# --- 습도 센서 제어 ---
-
+# 습도 센서 제어
 def get_humidity():
     max_retries = 5
     for attempt in range(max_retries):
@@ -150,8 +147,7 @@ def get_humidity():
         time.sleep(2.0) 
     return None
 
-# --- 팬 제어 ---
-
+# 팬 제어
 def turn_on_fan():
     GPIO.output(FAN_PIN, GPIO.HIGH)
     print("Fan ON")
@@ -160,8 +156,7 @@ def turn_off_fan():
     GPIO.output(FAN_PIN, GPIO.LOW)
     print("Fan OFF")
 
-# --- LED 제어 ---
-
+# LED 제어
 def set_weather_led_color(rain_level):
     """0:초록, 1:파랑, 2:노랑, 3:빨강"""
     colors = {
@@ -175,10 +170,6 @@ def set_weather_led_color(rain_level):
     print(f"Weather LED Rain Level {rain_level}")
 
 def highlight_user_umbrella_spot(user_id, spot_id, turn_on=True):
-    """
-    단색 LED를 켜거나 끕니다.
-    spot_id 1: 11번 핀, spot_id 2: 14번 핀
-    """
     state = GPIO.HIGH if turn_on else GPIO.LOW
     
     if spot_id == 1:
@@ -189,16 +180,13 @@ def highlight_user_umbrella_spot(user_id, spot_id, turn_on=True):
         print(f"Spot 2 LED {'ON' if turn_on else 'OFF'} for user {user_id}")
 
 def reset_leds():
-    """모든 LED 끄기"""
     _set_rgb_color(weather_rgb_pwm, 0, 0, 0)
     GPIO.output(USER_UMBRELLA_SPOT1_PIN, GPIO.LOW)
     GPIO.output(USER_UMBRELLA_SPOT2_PIN, GPIO.LOW)
     print("All LEDs (Weather & Spots) reset to OFF.")
 
-# --- 우산 자리 감지 (초음파) ---   
-
+# 특정 자리의 우산 유무 확인
 def get_spot_umbrella_status(spot_id, prev_status):
-    """spot_id 1 or 2에 해당하는 초음파 센서로 우산 유무 판별"""
     if not (1 <= spot_id <= 2):
         return False
 
@@ -216,52 +204,8 @@ def get_spot_umbrella_status(spot_id, prev_status):
             detected += 1
             #print(spot_id, distance)
     
-    # 히스테리시스 적용 (기존 로직 유지)
+    # 히스테리시스 적용
     if (5 <detected):
         return True
     else:
         return False
-        
-
-# --- 모듈 테스트 ---
-if __name__ == "__main__":
-    print("Running hardware_manager test...")
-    initialize_hardware()
-
-    try:
-        # 1. Test Fan
-        turn_on_fan()
-        time.sleep(1)
-        turn_off_fan()
-
-        # 2. Test Weather LED
-        print("\nTesting Weather RGB LED...")
-        for level in range(4):
-            set_weather_led_color(level)
-            time.sleep(1)
-        reset_leds()
-
-        # 3. Test Single Color Spot LEDs
-        print("\nTesting Single Color Spot LEDs...")
-        highlight_user_umbrella_spot("user_A", 1, True)
-        time.sleep(1)
-        highlight_user_umbrella_spot("user_B", 2, True)
-        time.sleep(1)
-        highlight_user_umbrella_spot("user_A", 1, False)
-        highlight_user_umbrella_spot("user_B", 2, False)
-        
-        # 4. Test Sensors
-        print("\nTesting Sensors (5s)...")
-        start_t = time.time()
-        while time.time() - start_t < 5:
-            hum = get_humidity()
-            p1 = get_spot_umbrella_status(1)
-            p2 = get_spot_umbrella_status(2)
-            print(f"Humidity: {hum}% | Spot1: {p1} | Spot2: {p2}")
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        print("Test interrupted.")
-    finally:
-        cleanup_hardware()
-        print("Test finished.")

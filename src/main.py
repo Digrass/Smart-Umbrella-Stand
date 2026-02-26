@@ -34,7 +34,6 @@ NO_PERSON_THRESHOLD = 2
 no_person_count = 0      
 
 def turn_off_all_user_spots():
-    """모든 사용자 우산 자리 LED를 끕니다."""
     hardware_manager.highlight_user_umbrella_spot(None, 1, turn_on=False)
     hardware_manager.highlight_user_umbrella_spot(None, 2, turn_on=False)
 
@@ -51,7 +50,6 @@ def main_loop():
     try:
         while True:
             # 1. 사람 감지 (초음파 센서)
-            #print("loop entered")
             if hardware_manager.detect_person_ultrasonic(threshold_cm=10):
                 no_person_count = 0 
                 if current_system_state == STATE_IDLE:
@@ -60,10 +58,7 @@ def main_loop():
                     
                     # 날씨 정보 가져와서 LED 설정
                     try:
-                        # 실제 API 호출
                         last_weather_rain_level = getPop(lat=37.26, lon=127.05)
-                        # 테스트용 (필요시 주석 해제)
-                        # last_weather_rain_level = 1 
                     except Exception as e:
                         print(f"날씨 정보 가져오기 실패: {e}")
                         last_weather_rain_level = 0
@@ -88,7 +83,7 @@ def main_loop():
                         current_system_state = STATE_USER_RECOGNIZED
                         print(f"사용자 '{user_id}' 인식됨.")
                         
-                        # 인식된 사용자의 고정된 우산 위치 LED 점등 (True 전달)
+                        # 인식된 사용자의 고정된 우산 위치 LED 점등
                         user_assigned_spot = umbrella_box.get_user_umbrella_spot(user_id)
                         
                         if user_assigned_spot is not None:
@@ -124,7 +119,7 @@ def main_loop():
                     if(current_system_state == STATE_IDLE):
                         current_system_state = STATE_UMBRELLA_ACTIVITY
                     
-                    if new_umbrella_status: # 우산이 새로 생김 (반납)
+                    if new_umbrella_status: # 우산이 새로 생김
                         print(f"자리 {spot_id}에 우산이 새로 들어옴.")
                         
                         assigned_user_for_spot = SPOT_USER_MAPPING.get(spot_id)
@@ -150,7 +145,7 @@ def main_loop():
                         if(current_system_state == STATE_UMBRELLA_ACTIVITY):
                             current_system_state = STATE_IDLE 
 
-                    else: # 우산이 가져가짐 (대여)
+                    else: # 우산이 사라짐
                         print(f"자리 {spot_id}에서 우산이 가져가짐.")
                         umbrella_box.update_spot_status(spot_id, False, None) 
                         
@@ -169,3 +164,4 @@ def main_loop():
 
 if __name__ == "__main__":
     main_loop()
+

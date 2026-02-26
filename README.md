@@ -1,1 +1,1 @@
-# Smart-Umbrella-Stand
+# Smart Umbrella Stand
